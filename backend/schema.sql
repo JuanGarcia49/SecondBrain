@@ -22,6 +22,13 @@ create table discord_bot_state(
 	updated_at timestamp not null,
 	constraint PK_discord primary key (id));
 
-select table_name
-from information_schema."tables"
-where table_schema = 'public';
+select 
+	t.id, 
+	c.name, 
+	t.vendor, 
+	REPLACE(to_char(t.amount, 'FM999,999,999'), ',', '.') AS amount, 
+	t.transaction_date, 
+	t.raw_sms 
+from transactions t 
+join categories c on t.category_id = c.id
+;

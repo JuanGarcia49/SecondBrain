@@ -12,13 +12,13 @@ System time: {current_time}
 Rules:
 1. Output strictly a valid JSON object.
 2. Keys must be exactly: "vendor", "amount", "date", "category".
-3. "amount" must be a pure number.
+3. "amount" must be a pure number. Ignore currency symbols.
 4. "date" must be calculated using the System time and formatted as "YYYY-MM-DD HH:MM:SS".
 5. "category" MUST be chosen from this exact list: [Food, Transport, Utilities, Entertainment, Health, Shopping, Bank Commitments, Other]. Do not invent new categories.
-6.  Do not output any explanations, conversational text, or markdown blocks. Output only the raw JSON.
+6. Do not output any explanations, conversational text, or markdown blocks. Output only the raw JSON.
 
-Example Input: "I bought a burger at McDonald's for 8 yesterday"
-Example Output: {{"vendor": "McDonald's", "amount": 8, "date": "2026-06-12 12:00:00", "category": "burger"}}
+Example Input: "Bancolombia: Compraste COP205.900,00 en SARKU K 39 con tu T.Cred *0923, el 14/06/2026 a las 13:59. Food"
+Example Output: {{"vendor": "SARKU K 39", "amount": 205900, "date": "2026-06-14 13:59:00", "category": "Food"}}
 
 Message Input: "{text}"
 Output:"""

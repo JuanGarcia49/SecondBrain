@@ -40,7 +40,7 @@ def get_transactions():
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
-    query = "SELECT * FROM transactions ORDER BY date DESC;"
+    query = "SELECT t.transaction_date, t.vendor, c.name AS category, t.amount FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.transaction_date DESC;"
     
     try:
         cur.execute(query)
@@ -57,7 +57,7 @@ def get_category_summary():
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
-    query = "SELECT category, SUM(amount) AS total_amount FROM transactions GROUP BY category;"
+    query = "SELECT c.name AS category, SUM(t.amount) AS total_amount FROM transactions t LEFT JOIN categories c ON t.category_id = c.id GROUP BY c.name;"
     
     try:
         cur.execute(query)
