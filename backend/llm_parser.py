@@ -17,8 +17,11 @@ Rules:
 5. "category" MUST be chosen from this exact list: [Food, Transport, Utilities, Entertainment, Health, Shopping, Bank Commitments, Other]. Do not invent new categories.
 6. Do not output any explanations, conversational text, or markdown blocks. Output only the raw JSON.
 
-Example Input: "Bancolombia: Compraste COP205.900,00 en SARKU K 39 con tu T.Cred *0923, el 14/06/2026 a las 13:59. Food"
-Example Output: {{"vendor": "SARKU K 39", "amount": 205900, "date": "2026-06-14 13:59:00", "category": "Food"}}
+Example Input: "Bancolombia: Pagaste $6,524,119 en la tarjeta de credito 0923 desde la cuenta6076, el 25/05/2026 12:09. Bank"
+Example Output: {{"vendor": "tarjeta de credito 0923", "amount": 6524119, "date": "2026-05-25 12:09:00", "category": "Bank Commitments"}}
+
+Example Input: "Bancolombia: Compraste COP19.986,00 en UBER RIDES con tu T.Cred *0923, el 14/06/2026 a las 11:39. Transport"
+Example Output: {{"vendor": "UBER RIDES", "amount": 19986, "date": "2026-06-14 11:39:00", "category": "Transport"}}
 
 Message Input: "{text}"
 Output:"""
