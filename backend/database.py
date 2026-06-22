@@ -2,6 +2,7 @@ import os
 import psycopg2
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 def get_db_connection():
@@ -45,3 +46,5 @@ def insert_transaction(data, raw_message):
     cur.close()
     conn.close()
     print(f"✅ Transaction saved to database! (Category ID: {category_id})")
+
+

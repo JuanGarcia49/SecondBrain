@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
+import CalendarHeatmap from "./assets/CalendarHeatmap";
 
 function App() {
   const [transactions, setTransactions] = useState([]);
@@ -63,7 +64,9 @@ function App() {
   };
 
   useEffect(() => {
-    setPayPeriods(generatePeriods());
+    const periods = generatePeriods();
+    setPayPeriods(periods);
+    setSelectedPeriod(periods[0].id);
 
     axios.get('http://192.168.0.55:8000/transactions')
       .then(response => {
@@ -151,6 +154,10 @@ function App() {
     other: "bg-neutral-900/30 text-neutral-400 border-neutral-800/50"
   };
 
+  const activePeriod = payPeriods.find(p => p.id === selectedPeriod);
+  const activePeriodStart = activePeriod ? activePeriod.start.toISOString().split('T')[0] : null;
+  const activePeriodEnd = activePeriod ? activePeriod.end.toISOString().split('T')[0] : null;
+
   return (
     <div className={`min-h-screen bg-neutral-900 text-neutral-100 p-6 grid ${isSidebarOpen ? 'grid-cols-[250px_1fr]' : 'grid-cols-1'} gap-8 transition-all duration-300`}>
 
@@ -218,6 +225,11 @@ function App() {
             <h1 className="text-2xl font-bold text-emerald-500 tracking-tight">Second Brain</h1>
           )}
         </div>
+
+        {/* New Calendar Heatmap Section */}
+        {selectedPeriod !== 'All' && activePeriodStart && activePeriodEnd && (
+          <CalendarHeatmap startDate={activePeriodStart} endDate={activePeriodEnd} />
+        )}
 
         {/* Chart moved here to the main wide column */}
         <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">

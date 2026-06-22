@@ -4,6 +4,11 @@ from fastapi import FastAPI, HTTPException
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+
+# from dependencies import get_db
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -63,6 +68,30 @@ def get_category_summary():
         cur.execute(query)
         summary = cur.fetchall()
         return {"summary": summary}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+@app.get("/transactions/heatmap")
+def get_heatmap_data(start_date: str, end_date: str):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    query = """
+        SELECT DATE(transaction_date) as day, SUM(amount) as daily_total
+        FROM transactions
+        WHERE transaction_date >= %s AND transaction_date <= %s
+        GROUP BY DATE(transaction_date)
+        ORDER BY day;
+    """
+    
+    try:
+        cur.execute(query, (start_date, end_date))
+        result = cur.fetchall()
+        # React expects an array of objects: [{"day": "2026-06-21", "total": 50000}]
+        return [{"day": str(row['day']), "total": float(row['daily_total'])} for row in result]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
