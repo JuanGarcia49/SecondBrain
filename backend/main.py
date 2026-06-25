@@ -75,22 +75,33 @@ def get_category_summary():
         conn.close()
 
 @app.get("/transactions/heatmap")
-def get_heatmap_data(start_date: str, end_date: str):
+def get_heatmap_data(start_date: str, end_date: str, category: str = "All"):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
-    query = """
-        SELECT DATE(transaction_date) as day, SUM(amount) as daily_total
-        FROM transactions
-        WHERE transaction_date >= %s AND transaction_date <= %s
-        GROUP BY DATE(transaction_date)
-        ORDER BY day;
-    """
-    
+    if category != "All":
+        query = """
+            SELECT DATE(t.transaction_date) as day, SUM(t.amount) as daily_total
+            FROM transactions t
+            LEFT JOIN categories c ON t.category_id = c.id
+            WHERE t.transaction_date >= %s AND t.transaction_date <= %s AND c.name = %s
+            GROUP BY DATE(t.transaction_date)
+            ORDER BY day;
+        """
+        params = (start_date, end_date, category)
+    else:
+        query = """
+            SELECT DATE(transaction_date) as day, SUM(amount) as daily_total
+            FROM transactions
+            WHERE transaction_date >= %s AND transaction_date <= %s
+            GROUP BY DATE(transaction_date)
+            ORDER BY day;
+        """
+        params = (start_date, end_date)
+        
     try:
-        cur.execute(query, (start_date, end_date))
+        cur.execute(query, params)
         result = cur.fetchall()
-        # React expects an array of objects: [{"day": "2026-06-21", "total": 50000}]
         return [{"day": str(row['day']), "total": float(row['daily_total'])} for row in result]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 import CalendarHeatmap from "./assets/CalendarHeatmap";
 
+
 function App() {
   const [transactions, setTransactions] = useState([]);
   const [error, setError] = useState(null);
@@ -13,6 +14,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [heatmapRefreshKey, setHeatmapRefreshKey] = useState(0); // Add this line
 
   const getPayday = (year, month) => {
     let date = new Date(year, month, 25);
@@ -228,7 +230,26 @@ function App() {
 
         {/* New Calendar Heatmap Section */}
         {selectedPeriod !== 'All' && activePeriodStart && activePeriodEnd && (
-          <CalendarHeatmap startDate={activePeriodStart} endDate={activePeriodEnd} />
+          <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-neutral-100 tracking-wide">Daily Spending Intensity</h2>
+              <button
+                onClick={() => setHeatmapRefreshKey(prev => prev + 1)}
+                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-neutral-200 transition-colors cursor-pointer text-sm font-medium flex items-center gap-2"
+              >
+                <span>Refresh</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+            <CalendarHeatmap
+              startDate={activePeriodStart}
+              endDate={activePeriodEnd}
+              refreshKey={heatmapRefreshKey}
+              category={selectedCategory}
+            />
+          </div>
         )}
 
         {/* Chart moved here to the main wide column */}

@@ -4,34 +4,37 @@ from datetime import datetime
 
 def extract_transaction(text):
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    current_date = current_time.split(" ")[0]
     
-    prompt = f"""You are a financial data extraction tool. Extract the vendor, amount, date, and category from the message into a strict JSON object.
+    # Moving the rules and examples to the System Prompt
+    system_prompt = f"""You are a financial data extraction API. Extract the vendor, amount, date, and category into a strict JSON object.
 System time: {current_time}
 
 Rules:
 1. Output strictly a valid JSON object.
 2. Keys must be exactly: "vendor", "amount", "date", "category".
 3. "amount" must be a pure number. Ignore currency symbols.
-4. "date" must be calculated using the System time and formatted as "YYYY-MM-DD HH:MM:SS".
-5. "category" MUST be chosen from this exact list: [Food, Transport, Utilities, Entertainment, Health, Shopping, Bank Commitments, Other]. Do not invent new categories.
-6. Do not output any explanations, conversational text, or markdown blocks. Output only the raw JSON.
+4. "date" must be formatted as "YYYY-MM-DD HH:MM:SS". Use the System time if the exact date is missing.
+5. "category" MUST be chosen from this exact list: [Food, Transport, Utilities, Entertainment, Health, Shopping, Bank Commitments, Debt, Other].
+6. Do not output any explanations.
 
-Example Input: "Bancolombia: Pagaste $6,524,119 en la tarjeta de credito 4055 desde la cuenta6076, el 25/05/2026 12:09. Bank"
-Example Output: {{"vendor": "tarjeta de credito 4055", "amount": 6524119, "date": "2026-05-25 12:09:00", "category": "Bank Commitments"}}
+Example 1:
+Input: "Bancolombia: Pagaste $6,524,119 en la tarjeta de credito 4055 desde la cuenta3025, el 25/05/2026 12:09. Bank"
+Output: {{"vendor": "tarjeta de credito 4055", "amount": 6524119, "date": "2026-05-25 12:09:00", "category": "Bank Commitments"}}
 
-Example Input: "Bancolombia: Compraste COP19.986,00 en UBER RIDES con tu T.Cred *0923, el 14/06/2026 a las 11:39. Transport"
-Example Output: {{"vendor": "UBER RIDES", "amount": 19986, "date": "2026-06-14 11:39:00", "category": "Transport"}}
-
-Message Input: "{text}"
-Output:"""
+Example 2:
+Input: "Bancolombia: Compraste COP19.986,00 en UBER RIDES con tu T.Cred *4055, el 14/06/2026 a las 11:39. Transport"
+Output: {{"vendor": "UBER RIDES", "amount": 19986, "date": "2026-06-14 11:39:00", "category": "Transport"}}
+"""
     
-    response = ollama.chat(model='hermes3:8b', messages=[
-        {
-            'role': 'user',
-            'content': prompt,
-        },
-    ])
+    # Passing format='json' forces strict JSON output at the API level
+    response = ollama.chat(
+        model='hermes3:8b',
+        messages=[
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': f"Message Input: {text}"}
+        ],
+        format='json' 
+    )
     
     result_text = response['message']['content'].strip()
     print(f"🤖 Raw LLM Output:\n{result_text}")
