@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from pydantic import BaseModel
 
 # from dependencies import get_db
 
@@ -45,13 +46,49 @@ def get_transactions():
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
-    query = "SELECT t.transaction_date, t.vendor, c.name AS category, t.amount FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.transaction_date DESC;"
+    query = "SELECT t.id, t.transaction_date, t.vendor, c.name AS category, t.amount, t.raw_sms FROM transactions t LEFT JOIN categories c ON t.category_id = c.id ORDER BY t.transaction_date DESC;"
     
     try:
         cur.execute(query)
         transactions = cur.fetchall()
         return {"transactions": transactions}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+class TransactionUpdate(BaseModel):
+    vendor: str
+    amount: float
+    category: str
+    raw_sms: str
+
+@app.put("/transactions/{transaction_id}")
+def update_transaction(transaction_id: int, tx: TransactionUpdate):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        cur.execute("SELECT id FROM categories WHERE name = %s;", (tx.category,))
+        cat_result = cur.fetchone()
+        
+        if not cat_result:
+            raise HTTPException(status_code=400, detail="Category not found")
+            
+        category_id = cat_result['id']
+        
+        update_query = """
+            UPDATE transactions 
+            SET vendor = %s, amount = %s, category_id = %s, raw_sms = %s 
+            WHERE id = %s
+        """
+        cur.execute(update_query, (tx.vendor, tx.amount, category_id, tx.raw_sms, transaction_id))
+        conn.commit()
+        
+        return {"status": "success"}
+    except Exception as e:
+        conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         cur.close()

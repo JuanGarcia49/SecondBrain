@@ -86,7 +86,7 @@ export default function CalendarHeatmap({ startDate, endDate, refreshKey, catego
                         <span className="font-semibold">{day.dayNumber}</span>
 
                         {day.total > 0 && (
-                            <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-neutral-900 border border-neutral-600 text-neutral-100 text-xs rounded p-2 bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10 whitespace-nowrap shadow-xl">
+                            <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-neutral-900 border border-neutral-600 text-neutral-100 text-base rounded p-4 bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10 whitespace-nowrap shadow-xl">
                                 {formatCOP(day.total)}
                             </div>
                         )}
