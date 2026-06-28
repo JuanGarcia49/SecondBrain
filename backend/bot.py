@@ -33,7 +33,7 @@ async def on_message(message):
     # If the dictionary is valid, insert it and reply
     if transaction_data:
         insert_transaction(transaction_data, message.content)
-        await message.channel.send(f"✅ Saved! Vendor: {transaction_data['vendor']} | Amount: {transaction_data['amount']}")
+        await message.channel.send(f"✅ Saved! Vendor: {transaction_data['vendor']} | Amount: {transaction_data['amount']} | Category: {transaction_data['category']}")
 
     await bot.process_commands(message)
 

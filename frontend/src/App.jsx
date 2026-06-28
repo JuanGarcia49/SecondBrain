@@ -18,6 +18,8 @@ function App() {
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editFormData, setEditFormData] = useState({ vendor: '', amount: '', category: '', raw_sms: '' });
+  const [isHeatmapOpen, setIsHeatmapOpen] = useState(false);
+  const [isSpendingSummaryOpen, setIsSpendingSummaryOpen] = useState(false);
 
   const getPayday = (year, month) => {
     let date = new Date(year, month, 25);
@@ -156,6 +158,14 @@ function App() {
     return acc;
   }, []);
 
+  // CODE to calculate percentages:
+  const totalSpending = dynamicSummary.reduce((sum, item) => sum + item.total_amount, 0);
+
+  const summaryWithPercentages = dynamicSummary.map(item => ({
+    ...item,
+    percentage: totalSpending > 0 ? Number(((item.total_amount / totalSpending) * 100).toFixed(1)) : 0
+  }));
+
   // Extract unique categories for the dropdown menu
   const uniqueCategories = [...new Set(transactions.map(tx => tx.category))];
 
@@ -232,6 +242,22 @@ function App() {
               </select>
             </div>
 
+            {/* Calendar Heatmap and Spending Summary buttons */}
+            <button onClick={() => setIsHeatmapOpen(!isHeatmapOpen)}
+              className={`w-full py-2.5 px-4 text-sm font-semibold rounded-lg border transition-colors cursor-pointer ${isHeatmapOpen
+                ? 'bg-emerald-900/20 text-emerald-400 border-emerald-500'
+                : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:bg-neutral-700 hover:text-neutral-100'
+                }`}>
+              Calendar Heatmap
+            </button>
+            <button onClick={() => setIsSpendingSummaryOpen(!isSpendingSummaryOpen)}
+              className={`w-full py-2.5 px-4 text-sm font-semibold rounded-lg border transition-colors cursor-pointer ${isSpendingSummaryOpen
+                ? 'bg-emerald-900/20 text-emerald-400 border-emerald-500'
+                : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:bg-neutral-700 hover:text-neutral-100'
+                }`}>
+              Spending Summary
+            </button>
+
           </div>
         </div>
       )}
@@ -257,49 +283,112 @@ function App() {
           )}
         </div>
 
+
+
+
         {/* New Calendar Heatmap Section */}
-        {selectedPeriod !== 'All' && activePeriodStart && activePeriodEnd && (
-          <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-neutral-100 tracking-wide">Daily Spending Intensity</h2>
-              <button
-                onClick={() => setHeatmapRefreshKey(prev => prev + 1)}
-                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-neutral-200 transition-colors cursor-pointer text-sm font-medium flex items-center gap-2"
-              >
-                <span>Refresh</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </button>
-            </div>
-            <CalendarHeatmap
-              startDate={activePeriodStart}
-              endDate={activePeriodEnd}
-              refreshKey={heatmapRefreshKey}
-              category={selectedCategory}
-            />
+        {isHeatmapOpen && (
+          <div className="my-cool-chart-container">
+            {selectedPeriod !== 'All' && activePeriodStart && activePeriodEnd && (
+              <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-baseline gap-3">
+                    <h2 className="text-xl font-bold text-neutral-100 tracking-wide">Daily Spending Intensity</h2>
+                    <span className="text-sm font-medium text-neutral-400">
+                      {selectedPeriod === 'All' ? 'All Time' : activePeriod?.label}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setHeatmapRefreshKey(prev => prev + 1)}
+                    className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-neutral-200 transition-colors cursor-pointer text-sm font-medium flex items-center gap-2"
+                  >
+                    <span>Refresh</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+                </div>
+                <CalendarHeatmap
+                  startDate={activePeriodStart}
+                  endDate={activePeriodEnd}
+                  refreshKey={heatmapRefreshKey}
+                  category={selectedCategory}
+                  totalSpending={totalSpending}
+                />
+              </div>
+            )}
           </div>
         )}
 
-        {/* Chart moved here to the main wide column */}
-        <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
-          <h2 className="text-xl font-bold text-neutral-100 mb-6 tracking-wide">Spending Summary</h2>
 
-          <div style={{ width: '100%', height: 300 }}>
-            <ResponsiveContainer>
-              <BarChart data={dynamicSummary}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
-                <XAxis dataKey="category" stroke="#a3a3a3" />
-                <YAxis width={110} tickFormatter={(value) => "$" + formatAmount(value)} stroke="#a3a3a3" />
-                <Tooltip
-                  formatter={(value) => `$${formatAmount(value)}`}
-                  contentStyle={{ backgroundColor: '#262626', borderColor: '#404040', color: '#f5f5f5' }}
-                />
-                <Bar dataKey="total_amount" fill="#10b981" radius={[4, 4, 0, 0]} barSize={80} />
-              </BarChart>
-            </ResponsiveContainer>
+        {/* 1. The Main Wrapper */}
+        {isSpendingSummaryOpen && (
+          <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
+
+            {/* 2. The Header (Your snippet goes exactly here) */}
+            <div className="flex justify-between items-end mb-6">
+              <div className="flex items-baseline gap-3">
+                <h2 className="text-xl font-bold text-neutral-100 tracking-wide">Spending Summary</h2>
+                <span className="text-sm font-medium text-neutral-400">
+                  {selectedPeriod === 'All' ? 'All Time' : activePeriod?.label}
+                </span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">Total</span>
+                <span className="text-xl font-bold text-emerald-400 tracking-tight">${formatAmount(totalSpending)}</span>
+              </div>
+            </div>
+
+            {/* 3. The Chart Container */}
+            <div style={{ width: '100%', height: 400 }}> {/* Increased height from 300 to 400 */}
+              <ResponsiveContainer>
+                <BarChart
+                  data={summaryWithPercentages}
+                  margin={{ bottom: 120, top: 20, left: 0, right: 0 }} /* Increased bottom margin */
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
+                  <XAxis
+                    dataKey="category"
+                    stroke="#a3a3a3"
+                    angle={-45}
+                    textAnchor="end"
+                    interval={0}
+                    tick={{ dy: 10, dx: -5 }}
+                  />
+                  <YAxis
+                    width={50}
+                    tickFormatter={(value) => `${value}%`}
+                    stroke="#a3a3a3"
+                  />
+
+                  {/* Custom Tooltip to show both values */}
+                  <Tooltip
+                    cursor={{ fill: '#262626' }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-[#262626] border border-[#404040] p-3 rounded-lg shadow-xl">
+                            <p className="text-neutral-200 font-bold uppercase text-xs mb-1">{data.category}</p>
+                            <p className="text-emerald-400 font-semibold text-lg">
+                              {data.percentage}%
+                            </p>
+                            <p className="text-neutral-400 text-sm">
+                              ${formatAmount(data.total_amount)}
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="percentage" fill="#10b981" radius={[4, 4, 0, 0]} barSize={80} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        )}
+
 
         <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
           <h2 className="text-xl font-bold text-neutral-100 mb-4 tracking-wide">Transactions</h2>
@@ -444,7 +533,7 @@ function App() {
         </div>
       </div>
 
-    </div>
+    </div >
   );
 }
 
