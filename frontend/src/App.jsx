@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 import CalendarHeatmap from "./assets/CalendarHeatmap";
+import MealEntryForm from "./assets/MealEntryForm";
 
 
 function App() {
@@ -20,6 +21,8 @@ function App() {
   const [editFormData, setEditFormData] = useState({ vendor: '', amount: '', category: '', raw_sms: '' });
   const [isHeatmapOpen, setIsHeatmapOpen] = useState(false);
   const [isSpendingSummaryOpen, setIsSpendingSummaryOpen] = useState(false);
+  const [isMealFormOpen, setIsMealFormOpen] = useState(false);
+  const [isTransactionsOpen, setIsTransactionsOpen] = useState(true);
 
   const getPayday = (year, month) => {
     let date = new Date(year, month, 25);
@@ -257,6 +260,20 @@ function App() {
                 }`}>
               Spending Summary
             </button>
+            <button onClick={() => setIsMealFormOpen(!isMealFormOpen)}
+              className={`w-full py-2.5 px-4 text-sm font-semibold rounded-lg border transition-colors cursor-pointer ${isMealFormOpen
+                ? 'bg-emerald-900/20 text-emerald-400 border-emerald-500'
+                : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:bg-neutral-700 hover:text-neutral-100'
+                }`}>
+              Log a meal
+            </button>
+            <button onClick={() => setIsTransactionsOpen(!isTransactionsOpen)}
+              className={`w-full py-2.5 px-4 text-sm font-semibold rounded-lg border transition-colors cursor-pointer ${isTransactionsOpen
+                ? 'bg-emerald-900/20 text-emerald-400 border-emerald-500'
+                : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:bg-neutral-700 hover:text-neutral-100'
+                }`}>
+              Transactions
+            </button>
 
           </div>
         </div>
@@ -389,124 +406,131 @@ function App() {
           </div>
         )}
 
+        {/* Meal Planning Section */}
+        {isMealFormOpen && (
+          <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-neutral-100 mb-4 tracking-wide">Log a Meal</h2>
+            <MealEntryForm />
+          </div>)}
 
         <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
           <h2 className="text-xl font-bold text-neutral-100 mb-4 tracking-wide">Transactions</h2>
 
           {/* Card Layout Replacing Table */}
-          <div className="flex flex-col gap-3.5 max-w-3xl mx-auto w-full">
-            {currentTransactions.map((tx, index) => (
-              <div
-                key={index}
-                onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
-                className="flex flex-col p-6 border-2 border-neutral-700 bg-neutral-800 rounded-2xl cursor-pointer hover:border-emerald-500 transition-colors"
-              >
-                {/* Top Row: Original Card Content */}
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full font-bold text-xl border uppercase ${categoryColors[tx.category.toLowerCase()] || categoryColors.other}`}>
-                      {tx.vendor.charAt(0)}
+          {isTransactionsOpen && (
+            <div className="flex flex-col gap-3.5 max-w-3xl mx-auto w-full">
+              {currentTransactions.map((tx, index) => (
+                <div
+                  key={index}
+                  onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
+                  className="flex flex-col p-6 border-2 border-neutral-700 bg-neutral-800 rounded-2xl cursor-pointer hover:border-emerald-500 transition-colors"
+                >
+                  {/* Top Row: Original Card Content */}
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full font-bold text-xl border uppercase ${categoryColors[tx.category.toLowerCase()] || categoryColors.other}`}>
+                        {tx.vendor.charAt(0)}
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-semibold text-neutral-100">{tx.vendor}</span>
+                        <span className="text-xs text-neutral-400">
+                          {new Date(tx.transaction_date).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="font-semibold text-neutral-100">{tx.vendor}</span>
-                      <span className="text-xs text-neutral-400">
-                        {new Date(tx.transaction_date).toLocaleDateString()}
+
+                    <div className="flex flex-col items-end gap-1.5 min-w-[120px]">
+                      <span className="font-bold text-neutral-100 text-lg tracking-tight">
+                        ${formatAmount(tx.amount)}
+                      </span>
+                      <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border ${categoryColors[tx.category.toLowerCase()] || categoryColors.other}`}>
+                        {tx.category}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end gap-1.5 min-w-[120px]">
-                    <span className="font-bold text-neutral-100 text-lg tracking-tight">
-                      ${formatAmount(tx.amount)}
-                    </span>
-                    <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border ${categoryColors[tx.category.toLowerCase()] || categoryColors.other}`}>
-                      {tx.category}
-                    </span>
-                  </div>
+                  {/* Expanded SMS Data & Edit Form */}
+                  {expandedIndex === index && (
+                    <div
+                      className="mt-4 pt-4 border-t border-neutral-700"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {editingIndex === index ? (
+                        <div className="flex flex-col gap-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <input
+                              type="text"
+                              value={editFormData.vendor}
+                              onChange={(e) => setEditFormData({ ...editFormData, vendor: e.target.value })}
+                              className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100"
+                              placeholder="Vendor"
+                            />
+                            <input
+                              type="number"
+                              value={editFormData.amount}
+                              onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })}
+                              className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100"
+                              placeholder="Amount"
+                            />
+                            <select
+                              value={editFormData.category}
+                              onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                              className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100 col-span-2"
+                            >
+                              {uniqueCategories.map((cat, i) => (
+                                <option key={i} value={cat}>{cat}</option>
+                              ))}
+                            </select>
+                            <textarea
+                              value={editFormData.raw_sms}
+                              onChange={(e) => setEditFormData({ ...editFormData, raw_sms: e.target.value })}
+                              className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100 col-span-2 font-mono h-20 resize-none"
+                              placeholder="Raw SMS"
+                            />
+                          </div>
+                          <div className="flex justify-end gap-3 mt-2">
+                            <button
+                              onClick={() => setEditingIndex(null)}
+                              className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-sm transition-colors cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleSave(tx.id)}
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm transition-colors cursor-pointer font-semibold"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-3">
+                          <p className="text-sm font-mono text-neutral-300 bg-neutral-900 p-3 rounded-lg break-words">
+                            {tx.raw_sms ? tx.raw_sms : "No raw SMS data available."}
+                          </p>
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => {
+                                setEditingIndex(index);
+                                setEditFormData({
+                                  vendor: tx.vendor,
+                                  amount: tx.amount,
+                                  category: tx.category,
+                                  raw_sms: tx.raw_sms || ''
+                                });
+                              }}
+                              className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2"
+                            >
+                              ✏️ Edit
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                {/* Expanded SMS Data & Edit Form */}
-                {expandedIndex === index && (
-                  <div
-                    className="mt-4 pt-4 border-t border-neutral-700"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {editingIndex === index ? (
-                      <div className="flex flex-col gap-3">
-                        <div className="grid grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            value={editFormData.vendor}
-                            onChange={(e) => setEditFormData({ ...editFormData, vendor: e.target.value })}
-                            className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100"
-                            placeholder="Vendor"
-                          />
-                          <input
-                            type="number"
-                            value={editFormData.amount}
-                            onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })}
-                            className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100"
-                            placeholder="Amount"
-                          />
-                          <select
-                            value={editFormData.category}
-                            onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
-                            className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100 col-span-2"
-                          >
-                            {uniqueCategories.map((cat, i) => (
-                              <option key={i} value={cat}>{cat}</option>
-                            ))}
-                          </select>
-                          <textarea
-                            value={editFormData.raw_sms}
-                            onChange={(e) => setEditFormData({ ...editFormData, raw_sms: e.target.value })}
-                            className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100 col-span-2 font-mono h-20 resize-none"
-                            placeholder="Raw SMS"
-                          />
-                        </div>
-                        <div className="flex justify-end gap-3 mt-2">
-                          <button
-                            onClick={() => setEditingIndex(null)}
-                            className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-sm transition-colors cursor-pointer"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={() => handleSave(tx.id)}
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm transition-colors cursor-pointer font-semibold"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-3">
-                        <p className="text-sm font-mono text-neutral-300 bg-neutral-900 p-3 rounded-lg break-words">
-                          {tx.raw_sms ? tx.raw_sms : "No raw SMS data available."}
-                        </p>
-                        <div className="flex justify-end">
-                          <button
-                            onClick={() => {
-                              setEditingIndex(index);
-                              setEditFormData({
-                                vendor: tx.vendor,
-                                amount: tx.amount,
-                                category: tx.category,
-                                raw_sms: tx.raw_sms || ''
-                              });
-                            }}
-                            className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2"
-                          >
-                            ✏️ Edit
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>)}
 
           {/* Pagination Controls */}
           <div className="mt-6 flex items-center justify-between w-full max-w-3xl mx-auto bg-neutral-800 border-2 border-neutral-700 rounded-xl p-4">
