@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from pydantic import BaseModel
+from typing import Optional
+from datetime import date
 
 # from dependencies import get_db
 
@@ -140,6 +142,86 @@ def get_heatmap_data(start_date: str, end_date: str, category: str = "All"):
         cur.execute(query, params)
         result = cur.fetchall()
         return [{"day": str(row['day']), "total": float(row['daily_total'])} for row in result]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+class MealCreate(BaseModel):
+    dish_name: str
+    meal_type: str
+    cook_date: date
+    has_leftovers: bool
+    transaction_id: Optional[int] = None
+    ingredients: list[str]
+
+@app.post("/meals")
+def create_meal(meal: MealCreate):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        # Insert the main meal record
+        meal_query = """
+            INSERT INTO meals (dish_name, meal_type, cook_date, has_leftovers, transaction_id)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id;
+        """
+        cur.execute(meal_query, (meal.dish_name, meal.meal_type, meal.cook_date, meal.has_leftovers, meal.transaction_id))
+        new_meal = cur.fetchone()
+        meal_id = new_meal['id']
+        
+        # Process the list of ingredient strings
+        for ingredient_name in meal.ingredients:
+            cur.execute("SELECT id FROM ingredients WHERE name = %s;", (ingredient_name,))
+            ing_result = cur.fetchone()
+            
+            if ing_result:
+                ingredient_id = ing_result['id']
+            else:
+                cur.execute("INSERT INTO ingredients (name) VALUES (%s) RETURNING id;", (ingredient_name,))
+                new_ing = cur.fetchone()
+                ingredient_id = new_ing['id']
+                
+            # Link the meal and the ingredient
+            cur.execute("INSERT INTO meal_ingredients (meal_id, ingredient_id) VALUES (%s, %s);", (meal_id, ingredient_id))
+        
+        conn.commit()
+        return {"status": "success", "meal_id": meal_id}
+        
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+@app.get("/meals")
+def get_meals():
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    query = """
+        SELECT 
+            m.id, 
+            m.dish_name, 
+            m.meal_type, 
+            m.cook_date, 
+            m.has_leftovers, 
+            m.transaction_id,
+            array_agg(i.name) AS ingredients
+        FROM meals m
+        LEFT JOIN meal_ingredients mi ON m.id = mi.meal_id
+        LEFT JOIN ingredients i ON mi.ingredient_id = i.id
+        GROUP BY m.id
+        ORDER BY m.cook_date DESC;
+    """
+    
+    try:
+        cur.execute(query)
+        meals = cur.fetchall()
+        return {"meals": meals}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:

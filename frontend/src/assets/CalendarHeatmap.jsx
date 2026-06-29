@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export default function CalendarHeatmap({ startDate, endDate, refreshKey, category }) {
+export default function CalendarHeatmap({ startDate, endDate, refreshKey, category, totalSpending }) {
 
     const [days, setDays] = useState([]);
     const [emptyDays, setEmptyDays] = useState([]);
@@ -86,8 +86,13 @@ export default function CalendarHeatmap({ startDate, endDate, refreshKey, catego
                         <span className="font-semibold">{day.dayNumber}</span>
 
                         {day.total > 0 && (
-                            <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-neutral-900 border border-neutral-600 text-neutral-100 text-base rounded p-4 bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10 whitespace-nowrap shadow-xl">
-                                {formatCOP(day.total)}
+                            <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-neutral-900 border border-neutral-600 text-neutral-100 text-base rounded p-3 bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10 whitespace-nowrap shadow-xl flex flex-col items-center gap-1">
+                                <span className="font-bold text-emerald-400">
+                                    {totalSpending > 0 ? ((day.total / totalSpending) * 100).toFixed(1) : 0}%
+                                </span>
+                                <span className="text-sm text-neutral-300">
+                                    {formatCOP(day.total)}
+                                </span>
                             </div>
                         )}
                     </div>

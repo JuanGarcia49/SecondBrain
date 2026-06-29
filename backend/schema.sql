@@ -22,6 +22,31 @@ create table discord_bot_state(
 	updated_at timestamp not null,
 	constraint PK_discord primary key (id));
 
+create table meals(
+	id int generated always as identity,
+	dish_name text,
+	meal_type text,
+	cook_date timestamp default NOW() not null,
+	has_leftovers bool,
+	transaction_id int,
+	constraint PK_meals primary key (id),
+	constraint FK_meals foreign key (transaction_id) references transactions(id)
+);
+
+create table ingredients(
+	id int generated always as identity,
+	name text unique,
+	constraint PK_ingredients primary key (id)
+);
+
+create table meal_ingredients(
+	meal_id int,
+	ingredient_id int,
+	constraint PK_meal_ingredients primary key (meal_id, ingredient_id),
+	constraint FK_meal_ingredients_meal foreign key (meal_id) references meals(id),
+	constraint FK_meal_ingredients_ingrediente foreign key (ingredient_id) references ingredients(id)
+);
+
 select 
 	t.id, 
 	c.name, 

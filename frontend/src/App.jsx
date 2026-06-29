@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 import CalendarHeatmap from "./assets/CalendarHeatmap";
+import MealEntryForm from "./assets/MealEntryForm";
 
 
 function App() {
@@ -18,6 +19,10 @@ function App() {
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editFormData, setEditFormData] = useState({ vendor: '', amount: '', category: '', raw_sms: '' });
+  const [isHeatmapOpen, setIsHeatmapOpen] = useState(false);
+  const [isSpendingSummaryOpen, setIsSpendingSummaryOpen] = useState(false);
+  const [isMealFormOpen, setIsMealFormOpen] = useState(false);
+  const [isTransactionsOpen, setIsTransactionsOpen] = useState(true);
 
   const getPayday = (year, month) => {
     let date = new Date(year, month, 25);
@@ -156,6 +161,14 @@ function App() {
     return acc;
   }, []);
 
+  // CODE to calculate percentages:
+  const totalSpending = dynamicSummary.reduce((sum, item) => sum + item.total_amount, 0);
+
+  const summaryWithPercentages = dynamicSummary.map(item => ({
+    ...item,
+    percentage: totalSpending > 0 ? Number(((item.total_amount / totalSpending) * 100).toFixed(1)) : 0
+  }));
+
   // Extract unique categories for the dropdown menu
   const uniqueCategories = [...new Set(transactions.map(tx => tx.category))];
 
@@ -232,6 +245,36 @@ function App() {
               </select>
             </div>
 
+            {/* Calendar Heatmap and Spending Summary buttons */}
+            <button onClick={() => setIsHeatmapOpen(!isHeatmapOpen)}
+              className={`w-full py-2.5 px-4 text-sm font-semibold rounded-lg border transition-colors cursor-pointer ${isHeatmapOpen
+                ? 'bg-emerald-900/20 text-emerald-400 border-emerald-500'
+                : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:bg-neutral-700 hover:text-neutral-100'
+                }`}>
+              Calendar Heatmap
+            </button>
+            <button onClick={() => setIsSpendingSummaryOpen(!isSpendingSummaryOpen)}
+              className={`w-full py-2.5 px-4 text-sm font-semibold rounded-lg border transition-colors cursor-pointer ${isSpendingSummaryOpen
+                ? 'bg-emerald-900/20 text-emerald-400 border-emerald-500'
+                : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:bg-neutral-700 hover:text-neutral-100'
+                }`}>
+              Spending Summary
+            </button>
+            <button onClick={() => setIsMealFormOpen(!isMealFormOpen)}
+              className={`w-full py-2.5 px-4 text-sm font-semibold rounded-lg border transition-colors cursor-pointer ${isMealFormOpen
+                ? 'bg-emerald-900/20 text-emerald-400 border-emerald-500'
+                : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:bg-neutral-700 hover:text-neutral-100'
+                }`}>
+              Log a meal
+            </button>
+            <button onClick={() => setIsTransactionsOpen(!isTransactionsOpen)}
+              className={`w-full py-2.5 px-4 text-sm font-semibold rounded-lg border transition-colors cursor-pointer ${isTransactionsOpen
+                ? 'bg-emerald-900/20 text-emerald-400 border-emerald-500'
+                : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:bg-neutral-700 hover:text-neutral-100'
+                }`}>
+              Transactions
+            </button>
+
           </div>
         </div>
       )}
@@ -257,167 +300,237 @@ function App() {
           )}
         </div>
 
+
+
+
         {/* New Calendar Heatmap Section */}
-        {selectedPeriod !== 'All' && activePeriodStart && activePeriodEnd && (
-          <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-neutral-100 tracking-wide">Daily Spending Intensity</h2>
-              <button
-                onClick={() => setHeatmapRefreshKey(prev => prev + 1)}
-                className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-neutral-200 transition-colors cursor-pointer text-sm font-medium flex items-center gap-2"
-              >
-                <span>Refresh</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </button>
-            </div>
-            <CalendarHeatmap
-              startDate={activePeriodStart}
-              endDate={activePeriodEnd}
-              refreshKey={heatmapRefreshKey}
-              category={selectedCategory}
-            />
+        {isHeatmapOpen && (
+          <div className="my-cool-chart-container">
+            {selectedPeriod !== 'All' && activePeriodStart && activePeriodEnd && (
+              <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-baseline gap-3">
+                    <h2 className="text-xl font-bold text-neutral-100 tracking-wide">Daily Spending Intensity</h2>
+                    <span className="text-sm font-medium text-neutral-400">
+                      {selectedPeriod === 'All' ? 'All Time' : activePeriod?.label}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setHeatmapRefreshKey(prev => prev + 1)}
+                    className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-neutral-200 transition-colors cursor-pointer text-sm font-medium flex items-center gap-2"
+                  >
+                    <span>Refresh</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+                </div>
+                <CalendarHeatmap
+                  startDate={activePeriodStart}
+                  endDate={activePeriodEnd}
+                  refreshKey={heatmapRefreshKey}
+                  category={selectedCategory}
+                  totalSpending={totalSpending}
+                />
+              </div>
+            )}
           </div>
         )}
 
-        {/* Chart moved here to the main wide column */}
-        <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
-          <h2 className="text-xl font-bold text-neutral-100 mb-6 tracking-wide">Spending Summary</h2>
 
-          <div style={{ width: '100%', height: 300 }}>
-            <ResponsiveContainer>
-              <BarChart data={dynamicSummary}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
-                <XAxis dataKey="category" stroke="#a3a3a3" />
-                <YAxis width={110} tickFormatter={(value) => "$" + formatAmount(value)} stroke="#a3a3a3" />
-                <Tooltip
-                  formatter={(value) => `$${formatAmount(value)}`}
-                  contentStyle={{ backgroundColor: '#262626', borderColor: '#404040', color: '#f5f5f5' }}
-                />
-                <Bar dataKey="total_amount" fill="#10b981" radius={[4, 4, 0, 0]} barSize={80} />
-              </BarChart>
-            </ResponsiveContainer>
+        {/* 1. The Main Wrapper */}
+        {isSpendingSummaryOpen && (
+          <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
+
+            {/* 2. The Header (Your snippet goes exactly here) */}
+            <div className="flex justify-between items-end mb-6">
+              <div className="flex items-baseline gap-3">
+                <h2 className="text-xl font-bold text-neutral-100 tracking-wide">Spending Summary</h2>
+                <span className="text-sm font-medium text-neutral-400">
+                  {selectedPeriod === 'All' ? 'All Time' : activePeriod?.label}
+                </span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">Total</span>
+                <span className="text-xl font-bold text-emerald-400 tracking-tight">${formatAmount(totalSpending)}</span>
+              </div>
+            </div>
+
+            {/* 3. The Chart Container */}
+            <div style={{ width: '100%', height: 400 }}> {/* Increased height from 300 to 400 */}
+              <ResponsiveContainer>
+                <BarChart
+                  data={summaryWithPercentages}
+                  margin={{ bottom: 120, top: 20, left: 0, right: 0 }} /* Increased bottom margin */
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
+                  <XAxis
+                    dataKey="category"
+                    stroke="#a3a3a3"
+                    angle={-45}
+                    textAnchor="end"
+                    interval={0}
+                    tick={{ dy: 10, dx: -5 }}
+                  />
+                  <YAxis
+                    width={50}
+                    tickFormatter={(value) => `${value}%`}
+                    stroke="#a3a3a3"
+                  />
+
+                  {/* Custom Tooltip to show both values */}
+                  <Tooltip
+                    cursor={{ fill: '#262626' }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-[#262626] border border-[#404040] p-3 rounded-lg shadow-xl">
+                            <p className="text-neutral-200 font-bold uppercase text-xs mb-1">{data.category}</p>
+                            <p className="text-emerald-400 font-semibold text-lg">
+                              {data.percentage}%
+                            </p>
+                            <p className="text-neutral-400 text-sm">
+                              ${formatAmount(data.total_amount)}
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="percentage" fill="#10b981" radius={[4, 4, 0, 0]} barSize={80} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Meal Planning Section */}
+        {isMealFormOpen && (
+          <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
+            <h2 className="text-xl font-bold text-neutral-100 mb-4 tracking-wide">Log a Meal</h2>
+            <MealEntryForm />
+          </div>)}
 
         <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-6">
           <h2 className="text-xl font-bold text-neutral-100 mb-4 tracking-wide">Transactions</h2>
 
           {/* Card Layout Replacing Table */}
-          <div className="flex flex-col gap-3.5 max-w-3xl mx-auto w-full">
-            {currentTransactions.map((tx, index) => (
-              <div
-                key={index}
-                onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
-                className="flex flex-col p-6 border-2 border-neutral-700 bg-neutral-800 rounded-2xl cursor-pointer hover:border-emerald-500 transition-colors"
-              >
-                {/* Top Row: Original Card Content */}
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full font-bold text-xl border uppercase ${categoryColors[tx.category.toLowerCase()] || categoryColors.other}`}>
-                      {tx.vendor.charAt(0)}
+          {isTransactionsOpen && (
+            <div className="flex flex-col gap-3.5 max-w-3xl mx-auto w-full">
+              {currentTransactions.map((tx, index) => (
+                <div
+                  key={index}
+                  onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
+                  className="flex flex-col p-6 border-2 border-neutral-700 bg-neutral-800 rounded-2xl cursor-pointer hover:border-emerald-500 transition-colors"
+                >
+                  {/* Top Row: Original Card Content */}
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full font-bold text-xl border uppercase ${categoryColors[tx.category.toLowerCase()] || categoryColors.other}`}>
+                        {tx.vendor.charAt(0)}
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-semibold text-neutral-100">{tx.vendor}</span>
+                        <span className="text-xs text-neutral-400">
+                          {new Date(tx.transaction_date).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="font-semibold text-neutral-100">{tx.vendor}</span>
-                      <span className="text-xs text-neutral-400">
-                        {new Date(tx.transaction_date).toLocaleDateString()}
+
+                    <div className="flex flex-col items-end gap-1.5 min-w-[120px]">
+                      <span className="font-bold text-neutral-100 text-lg tracking-tight">
+                        ${formatAmount(tx.amount)}
+                      </span>
+                      <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border ${categoryColors[tx.category.toLowerCase()] || categoryColors.other}`}>
+                        {tx.category}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end gap-1.5 min-w-[120px]">
-                    <span className="font-bold text-neutral-100 text-lg tracking-tight">
-                      ${formatAmount(tx.amount)}
-                    </span>
-                    <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md border ${categoryColors[tx.category.toLowerCase()] || categoryColors.other}`}>
-                      {tx.category}
-                    </span>
-                  </div>
+                  {/* Expanded SMS Data & Edit Form */}
+                  {expandedIndex === index && (
+                    <div
+                      className="mt-4 pt-4 border-t border-neutral-700"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {editingIndex === index ? (
+                        <div className="flex flex-col gap-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <input
+                              type="text"
+                              value={editFormData.vendor}
+                              onChange={(e) => setEditFormData({ ...editFormData, vendor: e.target.value })}
+                              className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100"
+                              placeholder="Vendor"
+                            />
+                            <input
+                              type="number"
+                              value={editFormData.amount}
+                              onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })}
+                              className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100"
+                              placeholder="Amount"
+                            />
+                            <select
+                              value={editFormData.category}
+                              onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
+                              className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100 col-span-2"
+                            >
+                              {uniqueCategories.map((cat, i) => (
+                                <option key={i} value={cat}>{cat}</option>
+                              ))}
+                            </select>
+                            <textarea
+                              value={editFormData.raw_sms}
+                              onChange={(e) => setEditFormData({ ...editFormData, raw_sms: e.target.value })}
+                              className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100 col-span-2 font-mono h-20 resize-none"
+                              placeholder="Raw SMS"
+                            />
+                          </div>
+                          <div className="flex justify-end gap-3 mt-2">
+                            <button
+                              onClick={() => setEditingIndex(null)}
+                              className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-sm transition-colors cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleSave(tx.id)}
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm transition-colors cursor-pointer font-semibold"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-3">
+                          <p className="text-sm font-mono text-neutral-300 bg-neutral-900 p-3 rounded-lg break-words">
+                            {tx.raw_sms ? tx.raw_sms : "No raw SMS data available."}
+                          </p>
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => {
+                                setEditingIndex(index);
+                                setEditFormData({
+                                  vendor: tx.vendor,
+                                  amount: tx.amount,
+                                  category: tx.category,
+                                  raw_sms: tx.raw_sms || ''
+                                });
+                              }}
+                              className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2"
+                            >
+                              ✏️ Edit
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                {/* Expanded SMS Data & Edit Form */}
-                {expandedIndex === index && (
-                  <div
-                    className="mt-4 pt-4 border-t border-neutral-700"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {editingIndex === index ? (
-                      <div className="flex flex-col gap-3">
-                        <div className="grid grid-cols-2 gap-3">
-                          <input
-                            type="text"
-                            value={editFormData.vendor}
-                            onChange={(e) => setEditFormData({ ...editFormData, vendor: e.target.value })}
-                            className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100"
-                            placeholder="Vendor"
-                          />
-                          <input
-                            type="number"
-                            value={editFormData.amount}
-                            onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })}
-                            className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100"
-                            placeholder="Amount"
-                          />
-                          <select
-                            value={editFormData.category}
-                            onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
-                            className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100 col-span-2"
-                          >
-                            {uniqueCategories.map((cat, i) => (
-                              <option key={i} value={cat}>{cat}</option>
-                            ))}
-                          </select>
-                          <textarea
-                            value={editFormData.raw_sms}
-                            onChange={(e) => setEditFormData({ ...editFormData, raw_sms: e.target.value })}
-                            className="bg-neutral-900 border border-neutral-600 focus:border-emerald-500 rounded-lg p-2.5 text-sm outline-none text-neutral-100 col-span-2 font-mono h-20 resize-none"
-                            placeholder="Raw SMS"
-                          />
-                        </div>
-                        <div className="flex justify-end gap-3 mt-2">
-                          <button
-                            onClick={() => setEditingIndex(null)}
-                            className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-sm transition-colors cursor-pointer"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={() => handleSave(tx.id)}
-                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm transition-colors cursor-pointer font-semibold"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-3">
-                        <p className="text-sm font-mono text-neutral-300 bg-neutral-900 p-3 rounded-lg break-words">
-                          {tx.raw_sms ? tx.raw_sms : "No raw SMS data available."}
-                        </p>
-                        <div className="flex justify-end">
-                          <button
-                            onClick={() => {
-                              setEditingIndex(index);
-                              setEditFormData({
-                                vendor: tx.vendor,
-                                amount: tx.amount,
-                                category: tx.category,
-                                raw_sms: tx.raw_sms || ''
-                              });
-                            }}
-                            className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 rounded-lg text-sm transition-colors cursor-pointer flex items-center gap-2"
-                          >
-                            ✏️ Edit
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>)}
 
           {/* Pagination Controls */}
           <div className="mt-6 flex items-center justify-between w-full max-w-3xl mx-auto bg-neutral-800 border-2 border-neutral-700 rounded-xl p-4">
@@ -444,7 +557,7 @@ function App() {
         </div>
       </div>
 
-    </div>
+    </div >
   );
 }
 
